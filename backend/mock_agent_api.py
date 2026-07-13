@@ -1,10 +1,12 @@
 """簡易モック バックエンド API(FastAPI). 先読み提案 / ワンクリック実行 / 進捗取得."""
 from __future__ import annotations
 
+from .feedback import FeedbackStore
 from .progress import ProgressRunner
 from .suggester import SuggestionEngine
 
-ENGINE = SuggestionEngine()
+FEEDBACK = FeedbackStore()
+ENGINE = SuggestionEngine(feedback=FEEDBACK)   # 学習を有効化
 RUNNER = ProgressRunner()
 
 # デモ用の既定文脈(フロントが未指定時に使う)
@@ -48,6 +50,22 @@ def create_app():  # pragma: no cover
     @app.get("/progress/{task_id}")
     def progress(task_id: str):
         return RUNNER.get(task_id).as_dict()
+
+    class Feedback(BaseModel):
+        suggestion_id: str
+        accepted: bool
+
+    @app.post("/feedback")
+    def feedback(body: Feedback):
+        # 採用/却下を学習に反映(次回以降の確信度・抑制に効く)
+        if body.accepted:
+            FEEDBACK.record_accept(body.suggestion_id)
+        else:
+            FEEDBACK.record_dismiss(body.suggestion_id)
+        st = FEEDBACK.stats(body.suggestion_id)
+        return {"suggestion_id": body.suggestion_id,
+                "accepts": st.accepts, "dismisses": st.dismisses,
+                "suppressed": FEEDBACK.is_suppressed(body.suggestion_id)}
 
     @app.get("/healthz")
     def healthz():

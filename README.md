@@ -20,6 +20,13 @@
 | ② | 進捗の可視化 | `backend/progress.py` + `frontend/.../ProgressView.jsx` |
 | ③ | ワンクリック実行 | `frontend/.../ProactiveSuggestion.jsx` |
 
+## 全機能(差別化＋拡張)
+
+- 提案理由の可視化 ＋ ワンクリック実行 ＋ 進捗可視化（差別化コア）
+- **フィードバック学習**（`feedback.py`）: 採用/却下履歴で確信度を適応調整（Beta平滑化）
+- **却下抑制**: 繰り返し却下された提案は自動的に出さなくなる
+- **API拡張**: `/feedback`（採用/却下の記録）で学習が回る
+
 ## クイックスタート
 
 ```bash

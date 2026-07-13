@@ -33,7 +33,13 @@ class Suggestion:
 
 
 class SuggestionEngine:
-    """文脈(recent_actions, view, pending 等) -> ルールで先読み提案."""
+    """文脈(recent_actions, view, pending 等) -> ルールで先読み提案.
+
+    feedback を渡すと、採用/却下履歴で確信度を適応調整し、繰り返し却下された提案を抑制する。
+    """
+
+    def __init__(self, feedback=None) -> None:
+        self.feedback = feedback
 
     def suggest(self, context: Dict) -> List[Suggestion]:
         recent = context.get("recent_actions", [])
@@ -84,6 +90,16 @@ class SuggestionEngine:
                 action=Action("drilldown", "詳細を開く", {"metric": an.get("metric")}),
                 confidence=0.85,
             ))
+
+        # フィードバック学習: 抑制 + 確信度の適応調整
+        if self.feedback is not None:
+            adjusted: List[Suggestion] = []
+            for s in out:
+                if self.feedback.is_suppressed(s.id):
+                    continue   # 繰り返し却下された提案は出さない
+                s.confidence = round(min(1.0, s.confidence * self.feedback.confidence_multiplier(s.id)), 2)
+                adjusted.append(s)
+            out = adjusted
 
         # 不変条件: reason は必ず非空
         for s in out:
