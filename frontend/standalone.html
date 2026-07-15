@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Proactive Agent UX</title>
+  <!-- ビルド不要: React/Babel を CDN から読み込み、このHTMLを開くだけで動作 -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    body { font-family: system-ui, sans-serif; background:#f5f6f8; margin:0; padding:24px; color:#1a1a2e; }
+    .wrap { max-width: 720px; margin: 0 auto; }
+    h1 { font-size: 20px; }
+    .card { background:#fff; border-radius:12px; padding:16px; margin:12px 0; box-shadow:0 1px 4px rgba(0,0,0,.08); }
+    .reason { color:#5a6; font-size:13px; background:#eefaf2; padding:8px 10px; border-radius:8px; margin:8px 0; }
+    .conf { font-size:12px; color:#889; }
+    button { background:#4361ee; color:#fff; border:0; padding:8px 14px; border-radius:8px; cursor:pointer; }
+    button:disabled { background:#aab; cursor:default; }
+    .step { display:flex; align-items:center; gap:8px; font-size:13px; padding:2px 0; }
+    .dot { width:10px; height:10px; border-radius:50%; background:#ccd; }
+    .dot.done { background:#2bb673; }
+    .bar { height:6px; background:#e4e7ee; border-radius:3px; overflow:hidden; margin:6px 0; }
+    .bar > div { height:100%; background:#4361ee; transition:width .3s; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel" data-presets="react">
+    const { useState } = React;
+
+    // バックエンド未起動でも動くよう、デモ用の先読み提案を内蔵
+    const DEMO_SUGGESTIONS = [
+      { id:"remind_payment", title:"支払いリマインドを送信", confidence:0.9,
+        reason:"請求書#1042 が未払いで支払期限まで残り2日です",
+        action:{ type:"send_reminder", label:"リマインド送信" },
+        steps:["宛先を解決","文面を生成","メール送信","送信ログ記録"] },
+      { id:"drill_anomaly", title:"CVRの異常を調査", confidence:0.85,
+        reason:"CVR が平常比-32%変化しています",
+        action:{ type:"drilldown", label:"詳細を開く" },
+        steps:["対象メトリクスを特定","関連データ取得","ビュー生成"] },
+      { id:"assign_owner", title:"担当者をアサイン", confidence:0.8,
+        reason:"新規チケット#87 に担当者が未設定です",
+        action:{ type:"assign_owner", label:"自動アサイン" },
+        steps:["候補者をスコアリング","最適担当を選定","アサイン適用"] },
+    ];
+
+    function ProgressView({ steps, activeCount }) {
+      const pct = Math.round((activeCount / steps.length) * 100);
+      return (
+        <div>
+          <div className="bar"><div style={{width: pct + "%"}}></div></div>
+          {steps.map((s, i) => (
+            <div className="step" key={i}>
+              <span className={"dot" + (i < activeCount ? " done" : "")}></span>{s}
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    function ProactiveSuggestion({ s }) {
+      const [running, setRunning] = useState(0); // 完了ステップ数
+      const [busy, setBusy] = useState(false);
+      const runOneClick = () => {
+        setBusy(true);
+        let done = 0;
+        const timer = setInterval(() => {
+          done += 1; setRunning(done);
+          if (done >= s.steps.length) { clearInterval(timer); setBusy(false); }
+        }, 400);
+      };
+      const finished = running >= s.steps.length;
+      return (
+        <div className="card">
+          <div style={{display:"flex", justifyContent:"space-between"}}>
+            <strong>{s.title}</strong>
+            <span className="conf">確信度 {(s.confidence*100).toFixed(0)}%</span>
+          </div>
+          {/* ★差別化: 提案理由の可視化 */}
+          <div className="reason">なぜ提案? {s.reason}</div>
+          {/* ★差別化: ワンクリック実行 */}
+          <button onClick={runOneClick} disabled={busy || finished}>
+            {finished ? "完了 ✓" : (busy ? "実行中..." : s.action.label + "(ワンクリック)")}
+          </button>
+          {running > 0 && <ProgressView steps={s.steps} activeCount={running} />}
+        </div>
+      );
+    }
+
+    function App() {
+      const [items] = useState(DEMO_SUGGESTIONS);
+      return (
+        <div className="wrap">
+          <h1>先読み提案エージェント <span className="conf">(意図を先読みして提案するプロアクティブUI)</span></h1>
+          {items.map(s => <ProactiveSuggestion key={s.id} s={s} />)}
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>

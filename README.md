@@ -27,11 +27,25 @@
 - **却下抑制**: 繰り返し却下された提案は自動的に出さなくなる
 - **API拡張**: `/feedback`（採用/却下の記録）で学習が回る
 
+## 本番構成（SQLite + HTMLレポート + Vite 2画面）
+
+- **DB**: `service/db.py`（SQLite）。フィードバック(採用/却下)を**テナント別に永続化**し学習を復元
+- **API**: `service/api.py`（FastAPI）。suggest(学習反映) / execute / feedback / report(HTML)
+- **HTMLレポート**: `service/report_html.py`（提案別採用率）
+- **フロント**: `frontend/`（React+Vite）。**先読み提案**＋**学習アナリティクス**の2画面。ビルド不要は `frontend/standalone.html`
+- **CI**: `.github/workflows/ci.yml`
+
+```bash
+uvicorn service.api:app --reload
+cd frontend && npm install && npm run dev     # or: open frontend/standalone.html
+python -m pytest -q                            # テスト18件(DB/テナント学習/HTMLレポート/API E2E含む)
+```
+
 ## クイックスタート
 
 ```bash
-# フロント: ビルド不要。ブラウザで frontend/index.html を開くだけで動作(React CDN)
-open frontend/index.html      # or ダブルクリック
+# フロント: ビルド不要。ブラウザで frontend/standalone.html を開くだけで動作(React CDN)
+open frontend/standalone.html      # or ダブルクリック
 
 # バックエンド(任意): 実提案APIを使う場合
 pip install fastapi uvicorn
