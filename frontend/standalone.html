@@ -7,7 +7,7 @@
   <!-- ビルド不要: React/Babel を CDN から読み込み、このHTMLを開くだけで動作 -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.25.6/babel.min.js"></script>
   <style>
     body { font-family: system-ui, sans-serif; background:#f5f6f8; margin:0; padding:24px; color:#1a1a2e; }
     .wrap { max-width: 720px; margin: 0 auto; }
@@ -37,7 +37,7 @@
 </head>
 <body>
   <div id="root"></div>
-  <script type="text/babel" data-presets="react">
+  <script type="text/plain" id="__jsx">
     const { useState } = React;
 
     // バックエンド未起動でも動くよう、デモ用の先読み提案を内蔵
@@ -111,5 +111,5 @@
 
     ReactDOM.createRoot(document.getElementById("root")).render(<App />);
   </script>
-</body>
+<script>(function(){var src=document.getElementById("__jsx").textContent;var out=Babel.transform(src,{presets:[["react",{runtime:"classic"}]]}).code;(0,eval)(out);})();</script></body>
 </html>
